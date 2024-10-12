@@ -142,6 +142,20 @@ func (api *LighthouseAPI) LoginUser(email, username, password, requestedDuration
 	return api.authToken, nil
 }
 
+func (api *LighthouseAPI) Logout() error {
+	if api.authToken == "" {
+		return fmt.Errorf("user is not currently logged in")
+	}
+
+	err := api.Blacklist(api.authToken)
+	if err != nil {
+		return fmt.Errorf("failed to logout: %w", err)
+	}
+
+	api.authToken = "" // Clear the auth token after successful logout
+	return nil
+}
+
 func (api *LighthouseAPI) Blacklist(token string) error {
 	resp, err := api.sendRequest("GET", "/api/v1/vip/blacklist/"+token, nil)
 	if err != nil {

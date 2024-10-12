@@ -81,7 +81,6 @@ func tokenAuthMiddleware(db *gorm.DB) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		// Check if the token exists and if it's disabled
 		var tokenData ds.TokenData
 		result := db.Where("token = ?", token).First(&tokenData)
 		if result.Error != nil {

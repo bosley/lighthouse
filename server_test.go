@@ -188,7 +188,7 @@ func createExpiredToken(t *testing.T, db *gorm.DB) string {
 		"exp": time.Now().Add(-1 * time.Hour).Unix(), // Expired 1 hour ago
 	})
 
-	tokenString, err := token.SignedString([]byte("your-secret-key"))
+	tokenString, err := token.SignedString([]byte("super-secret-key"))
 	assert.NoError(t, err)
 
 	return tokenString
@@ -224,4 +224,38 @@ func setupRoutes(router *gin.Engine, db *gorm.DB) {
 			vip.GET("/blacklist/:token", blacklistToken(db))
 		}
 	}
+}
+
+func TestLogoutUser(t *testing.T) {
+	db, err := setupTestDatabase()
+	assert.NoError(t, err)
+
+	server := setupTestServer(db)
+	defer server.Close()
+
+	lighthouseAPI := api.NewLighthouseAPI(server.URL, api.WithSelfSignedCerts())
+
+	// Create a user and login
+	_, err = lighthouseAPI.CreateUser("logout@example.com", "logoutuser", "password123")
+	assert.NoError(t, err)
+	token, err := lighthouseAPI.LoginUser("logout@example.com", "", "password123", "30m")
+	assert.NoError(t, err)
+	assert.NotEmpty(t, token)
+
+	t.Run("Successful logout", func(t *testing.T) {
+		err := lighthouseAPI.Logout()
+		assert.NoError(t, err)
+	})
+
+	t.Run("Logout when already logged out", func(t *testing.T) {
+		err := lighthouseAPI.Logout()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "user is not currently logged in")
+	})
+
+	t.Run("Attempt to use token after logout", func(t *testing.T) {
+		err := lighthouseAPI.Blacklist(token)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "Missing token")
+	})
 }
