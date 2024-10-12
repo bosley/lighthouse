@@ -206,29 +206,6 @@ POST /api/v1/auth
 }
 ```
 
-### Access a Protected Endpoint
-
-**Endpoint:**
-
-```http
-GET /api/v1/vip/protected
-```
-
-**Headers:**
-
-```
-Lighthouse-Token: <Your JWT Token>
-```
-
-**Response:**
-
-```json
-{
-    "code": 200,
-    "message": "Protected content access granted."
-}
-```
-
 ### Blacklist a Token
 
 **Endpoint:**
@@ -253,72 +230,3 @@ Lighthouse-Token: <Your JWT Token>
 ```
 
 **Note:** You must be authenticated to blacklist a token.
-
-## Database Structure
-
-### User Model
-
-```go
-type User struct {
-    gorm.Model
-    Email              string `gorm:"uniqueIndex;not null"`
-    Username           string `gorm:"uniqueIndex;not null"`
-    PasswordBcryptHash []byte `gorm:"not null"`
-    IsVerified         bool   `gorm:"default:false"`
-}
-```
-
-- Stores user credentials and verification status.
-- Passwords are stored as bcrypt hashes.
-
-### TokenData Model
-
-```go
-type TokenData struct {
-    gorm.Model
-    AssociatedUserID uint
-    AssociatedUser   User `gorm:"foreignKey:AssociatedUserID"`
-    Generated        time.Time `gorm:"not null"`
-    Token            string    `gorm:"uniqueIndex;not null"`
-    Disabled         bool      `gorm:"default:false"`
-}
-```
-
-- Stores issued JWT tokens.
-- Keeps track of token generation time and disabled status for blacklisting.
-
-### UserMeta Model
-
-```go
-type UserMeta struct {
-    gorm.Model
-    UserID   uint `gorm:"uniqueIndex"`
-    UserData User `gorm:"foreignKey:UserID"`
-}
-```
-
-- Reserved for additional user metadata.
-- Currently minimal but can be extended as needed.
-
-## Security Considerations
-
-- **Password Hashing**: Uses bcrypt with the default cost to hash passwords securely.
-- **JWT Signing**: Tokens are signed using HMAC SHA256 with a secret key provided via `LIGHTHOUSE_SECRET_KEY`.
-- **TLS**: Supports HTTPS with TLS configuration. Self-signed certificates can be generated for development.
-- **Rate Limiting**: Implements rate limiting on endpoints to mitigate brute-force attacks.
-- **Token Blacklisting**: Tokens can be invalidated before expiration to prevent unauthorized access.
-
-## Development Notes
-
-- **Error Handling**: All errors are handled explicitly, and appropriate HTTP status codes are returned.
-- **Deprecation**: Avoids using deprecated packages like `ioutil` in favor of modern equivalents.
-- **Code Practices**: Follows good Go practices, such as proper error handling and code structure.
-- **Logging**: Uses structured logging with different levels (debug, info, error) for better traceability.
-
-## Conclusion
-
-This authentication server provides a solid foundation for managing user authentication in your applications. It's designed with security and scalability in mind, following best practices in Go development. Feel free to explore the codebase and adapt it to your needs.
-
----
-
-If you have any questions or need further assistance, please refer to the code comments or reach out.
